@@ -285,6 +285,30 @@ describe "ResqueSpec Matchers" do
         Person.should_not have_scheduled(first_name, last_name).in(interval + 5 * 60)
       end
     end
+    
+    context "with #in_around(interval)" do
+      let(:interval) { 10 * 60 }
+
+      before(:each) do
+        Resque.enqueue_in(interval, Person, first_name, last_name)
+      end
+
+      it "returns work if its exact" do
+        Person.should have_scheduled(first_name, last_name).in_around(interval)
+      end
+      
+      it "returns work if its within +/- 5 seconds" do
+        Person.should have_scheduled(first_name, last_name).in_around(interval - 5)
+        Person.should have_scheduled(first_name, last_name).in_around(interval - 1)
+        Person.should have_scheduled(first_name, last_name).in_around(interval + 1)
+        Person.should have_scheduled(first_name, last_name).in_around(interval + 5)
+      end
+      
+      it "returns not work if its outside of +/- 5 seconds" do
+        Person.should_not have_scheduled(first_name, last_name).in_around(interval - 6)
+        Person.should_not have_scheduled(first_name, last_name).in_around(interval + 6)
+      end
+    end
 
     context "with #queue(queue_name)" do
       let(:interval) { 10 * 60 }

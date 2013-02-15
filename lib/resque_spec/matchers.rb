@@ -143,6 +143,13 @@ RSpec::Matchers.define :have_scheduled do |*expected_args|
     @time_info = "in #{@interval} seconds"
   end
 
+  chain :in_around do |interval|
+    @time = nil
+    @interval = interval
+    @around = true
+    @time_info = "in around #{@interval} seconds"
+  end
+
   match do |actual|
     schedule_queue_for(actual).any? do |entry|
       class_matches = entry[:class].to_s == actual.to_s
@@ -151,7 +158,12 @@ RSpec::Matchers.define :have_scheduled do |*expected_args|
       time_matches = if @time
         entry[:time] == @time
       elsif @interval
-        entry[:time].to_i == (entry[:stored_at] + @interval).to_i
+        time = (entry[:stored_at] + @interval).to_i
+        if @around
+          entry[:time].to_i >= (time - 5) && entry[:time].to_i <= (time + 5)
+        else
+          entry[:time].to_i == time
+        end
       else
         true
       end
